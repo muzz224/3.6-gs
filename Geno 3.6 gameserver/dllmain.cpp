@@ -27,6 +27,11 @@ DWORD WINAPI Main(LPVOID)
 
     *(bool*)(Sarah::Offsets::GIsClient + ImageBase) = false;
 
+    auto DefaultPC = AFortPlayerControllerAthena::GetDefaultObj();
+    if (DefaultPC) {
+        VirtualHook(DefaultPC, 0x104, (void*)hkServerAcknowledgePossession, (void**)&oServerAcknowledgePossession);
+    }
+
     UWorld* World = UWorld::GetWorld();
     if (World && World->OwningGameInstance && World->OwningGameInstance->LocalPlayers.Num() > 0) {
         World->OwningGameInstance->LocalPlayers.Remove(0);

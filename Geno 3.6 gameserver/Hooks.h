@@ -67,35 +67,26 @@ namespace Hooks
 	}
 
 	APawn* SpawnDefaultPawnFor(AFortGameModeAthena* GameMode, AFortPlayerControllerAthena* Controller, AActor* StartSpot) {
-		APawn* Pawn = nullptr;
 		if (GameMode && Controller && StartSpot) {
-			Pawn = GameMode->SpawnDefaultPawnAtTransform(Controller, StartSpot->GetTransform());
+			return GameMode->SpawnDefaultPawnAtTransform(Controller, StartSpot->GetTransform());
 		}
-		if (Pawn && Controller) {
-			auto PlayerState = (AFortPlayerStateAthena*)Controller->PlayerState;
-			if (PlayerState) {
-				auto Loadout = Controller->CustomizationLoadout;
-				if (Loadout.Character && Loadout.Character->HeroDefinition) {
-					auto FortPawn = (APlayerPawn_Athena_C*)Pawn;
-					if (FortPawn) {
-						FortPawn->CustomizationLoadout = Loadout;
-						FortPawn->OnRep_CustomizationLoadout();
-						PlayerState->HeroType = Loadout.Character->HeroDefinition;
-						PlayerState->OnRep_HeroType();
-						auto Apply = (void(*)(void*, void*))(ImageBase + 0xf32360);
-						Apply(PlayerState, FortPawn);
-					}
-				}
-			}
-		}
-		return Pawn;
+		return nullptr;
 	}
 
 	inline void (*TickFlush_OG)(UNetDriver* NetDriver, float DeltaSeconds);
 	void TickFlush(UNetDriver* Driver, float DeltaSeconds)
 	{
+		static void (*ServerReplicateActors)(void*, float) = nullptr;
 		if (Driver && Driver->ReplicationDriver) {
-			Sarah::Funcs::ServerReplicateActors(Driver->ReplicationDriver, DeltaSeconds);
+			if (!ServerReplicateActors) {
+				auto VFT = *(void***)Driver->ReplicationDriver;
+				if (VFT) {
+					ServerReplicateActors = (void(*)(void*, float))VFT[0x53];
+				}
+			}
+			if (ServerReplicateActors) {
+				ServerReplicateActors(Driver->ReplicationDriver, DeltaSeconds);
+			}
 		}
 
 		return TickFlush_OG(Driver, DeltaSeconds);
@@ -111,6 +102,39 @@ namespace Patches
 	void ReturnHook() {
 		return;
 	}
+}
+
+inline void (*oServerAcknowledgePossession)(AFortPlayerControllerAthena*, APawn*) = nullptr;
+
+void hkServerAcknowledgePossession(AFortPlayerControllerAthena* PC, APawn* Pawn) {
+	if (PC && Pawn) {
+		auto PlayerState = (AFortPlayerStateAthena*)PC->PlayerState;
+		auto FortPawn = (APlayerPawn_Athena_C*)Pawn;
+		if (PlayerState && FortPawn) {
+			auto Loadout = PC->CustomizationLoadout;
+			if (Loadout.Character && Loadout.Character->HeroDefinition) {
+				FortPawn->CustomizationLoadout = Loadout;
+				FortPawn->OnRep_CustomizationLoadout();
+				PlayerState->HeroType = Loadout.Character->HeroDefinition;
+				PlayerState->OnRep_HeroType();
+				auto Apply = (void(*)(void*, void*))(ImageBase + 0xf32360);
+				Apply(PlayerState, FortPawn);
+			}
+		}
+	}
+	if (oServerAcknowledgePossession) {
+		oServerAcknowledgePossession(PC, Pawn);
+	}
+}
+
+inline void VirtualHook(void* Object, int Index, void* Detour, void** OG) {
+	auto vft = *(void***)Object;
+	if (!vft || !vft[Index]) return;
+	if (OG) *OG = vft[Index];
+	DWORD old;
+	VirtualProtect(&vft[Index], sizeof(void*), PAGE_EXECUTE_READWRITE, &old);
+	vft[Index] = Detour;
+	VirtualProtect(&vft[Index], 8, old, NULL);
 }
 
 inline void* (*DispatchRequest_OG)(void*, void*, int) = nullptr;
