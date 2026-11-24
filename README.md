@@ -8,3 +8,4 @@ A Fortnite 3.6 gameserver project.
 * ingame only rn 
 * mcp (broken)
 
+having problems fully uploading the gs into github
