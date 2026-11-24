@@ -1,0 +1,10 @@
+.vs/
+x64/
+*.dll
+*.pdb
+*.obj
+*.lib
+*.iobj
+*.ipdb
+*.tlog
+*.lastbuildstate
