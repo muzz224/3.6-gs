@@ -5,7 +5,7 @@ A Fortnite 3.6 gameserver project.
 ## Credits
 
 * Offsets and function signatures based on findings generated with Sarah's Offset Finder (plooshi/SkidFinder).
-* ingame only rn 
+* ingame only rn (fixing)
 * mcp (broken)
 
 having problems fully uploading the gs into github
