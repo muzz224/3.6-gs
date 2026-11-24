@@ -76,17 +76,8 @@ namespace Hooks
 	inline void (*TickFlush_OG)(UNetDriver* NetDriver, float DeltaSeconds);
 	void TickFlush(UNetDriver* Driver, float DeltaSeconds)
 	{
-		static void (*ServerReplicateActors)(void*, float) = nullptr;
 		if (Driver && Driver->ReplicationDriver) {
-			if (!ServerReplicateActors) {
-				auto VFT = *(void***)Driver->ReplicationDriver;
-				if (VFT) {
-					ServerReplicateActors = (void(*)(void*, float))VFT[0x53];
-				}
-			}
-			if (ServerReplicateActors) {
-				ServerReplicateActors(Driver->ReplicationDriver, DeltaSeconds);
-			}
+			Sarah::Funcs::ServerReplicateActors(Driver->ReplicationDriver, DeltaSeconds);
 		}
 
 		return TickFlush_OG(Driver, DeltaSeconds);
@@ -119,6 +110,22 @@ void hkServerAcknowledgePossession(AFortPlayerControllerAthena* PC, APawn* Pawn)
 				PlayerState->OnRep_HeroType();
 				auto Apply = (void(*)(void*, void*))(ImageBase + 0xf32360);
 				Apply(PlayerState, FortPawn);
+			}
+
+			using GiveAbilityFnType = void*(*)(void*, void*, FGameplayAbilitySpec);
+			using SpecConstructorFnType = void(*)(FGameplayAbilitySpec*, void*, int, int, void*);
+			static auto GiveAbilityFn = (GiveAbilityFnType)(ImageBase + Sarah::Offsets::GiveAbility);
+			static auto SpecConstructorFn = (SpecConstructorFnType)(ImageBase + Sarah::Offsets::SpecConstructor);
+			auto AbilitySet = UObject::FindObject<UFortAbilitySet>("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer");
+			if (AbilitySet && PlayerState->AbilitySystemComponent) {
+				auto& Abilities = AbilitySet->GameplayAbilities;
+				for (int i = 0; i < Abilities.Num(); i++) {
+					auto AbilityClass = Abilities[i].Get();
+					if (!AbilityClass) continue;
+					FGameplayAbilitySpec NewSpec{};
+					SpecConstructorFn(&NewSpec, AbilityClass->ClassDefaultObject, 1, -1, nullptr);
+					GiveAbilityFn(PlayerState->AbilitySystemComponent, &NewSpec.Handle, NewSpec);
+				}
 			}
 		}
 	}

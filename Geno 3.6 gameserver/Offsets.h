@@ -37,6 +37,8 @@ namespace Sarah {
         inline uint64_t StaticFindObject = 0x14e5890;
         inline uint64_t StaticLoadObject = 0x14e7390;
         inline uint64_t KickPlayer = 0xd77590;
+        inline uint64_t GiveAbility = 0x527580;
+        inline uint64_t SpecConstructor = 0x103da30;
         inline uint64_t ServerReplicateActors = 0x6D81C0;
         inline uint64_t GIsClient = 0x4a9ca14;
         inline uint64_t GIsServer = 0x4A9CA15;
