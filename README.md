@@ -6,5 +6,5 @@ A Fortnite 3.6 gameserver project.
 
 * Offsets and function signatures based on findings generated with Sarah's Offset Finder (plooshi/SkidFinder).
 * ingame only rn 
-* mcp soon
+* mcp (broken)
 
